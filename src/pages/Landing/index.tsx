@@ -1,9 +1,10 @@
-import { styled } from '@mui/material';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getL2TransactionHashes } from 'viem/op-stack';
 import { useAccount, useChainId, useSendTransaction } from 'wagmi';
+import { getL2TransactionHashes } from 'viem/op-stack';
 
-import { useL1Client, useL2Client, useOptimismSdk } from '~/hooks';
+import { useQueryParams, useL1Client, useL2Client, useOptimismSdk } from '~/hooks';
+import { QueryParamKey } from '~/types';
 
 import { MainCard } from './MainCard';
 
@@ -11,6 +12,7 @@ export const Landing = () => {
   const { address } = useAccount();
   const chainId = useChainId();
   const { t } = useTranslation();
+  const { updateQueryParams } = useQueryParams();
   const { publicClientL1, walletClientL1 } = useL1Client();
   const { sendTransaction } = useSendTransaction();
   const { publicClientL2 } = useL2Client();
@@ -54,9 +56,13 @@ export const Landing = () => {
     address && sendTransaction({ value: 1n, to: address });
   };
 
+  useEffect(() => {
+    if (chainId) updateQueryParams(QueryParamKey.originChainId, chainId.toString());
+  }, [chainId, updateQueryParams]);
+
   return (
-    <LandingContainer>
-      <h1 data-testid='boilerplate-title'>{t('headerTitle', { appName: 'Superchain Bridge' })}</h1>
+    <section>
+      <h1 data-testid='boilerplate-title'>{t('HEADER.title', { appName: 'Superchain Bridge' })}</h1>
       <p>Connected account: {address}</p>
       <p>Connected to chainId: {chainId}</p>
 
@@ -69,16 +75,6 @@ export const Landing = () => {
 
       <button onClick={handleSend}>Send some ETH to myself</button>
       <MainCard />
-    </LandingContainer>
+    </section>
   );
 };
-
-const LandingContainer = styled('div')`
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 16rem);
-  padding: 0 8rem;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-`;
