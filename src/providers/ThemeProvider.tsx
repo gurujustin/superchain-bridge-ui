@@ -1,4 +1,6 @@
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { createContext, useEffect, useMemo, useState } from 'react';
+import { getMuiThemeConfig } from '~/components';
 
 import { Theme, ThemeName } from '~/types';
 import { THEME_KEY, getTheme } from '~/utils';
@@ -6,7 +8,7 @@ import { THEME_KEY, getTheme } from '~/utils';
 type ContextType = {
   theme: ThemeName;
   currentTheme: Theme;
-  setTheme: (val: ThemeName) => void;
+  changeTheme: () => void;
 };
 
 interface StateProps {
@@ -20,6 +22,13 @@ export const ThemeProvider = ({ children }: StateProps) => {
 
   const [theme, setTheme] = useState<ThemeName>(defaultTheme);
   const currentTheme = useMemo(() => getTheme(theme), [theme]);
+
+  const changeTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem(THEME_KEY, newTheme);
+    setTheme(newTheme);
+  };
+  const muiTheme = useMemo(() => getMuiThemeConfig(currentTheme, theme), [currentTheme, theme]);
 
   // Load theme from local storage on load
   useEffect(() => {
@@ -36,10 +45,10 @@ export const ThemeProvider = ({ children }: StateProps) => {
       value={{
         theme,
         currentTheme,
-        setTheme,
+        changeTheme,
       }}
     >
-      {children}
+      <MuiThemeProvider theme={muiTheme}>{children}</MuiThemeProvider>
     </ThemeContext.Provider>
   );
 };
