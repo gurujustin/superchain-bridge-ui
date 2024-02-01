@@ -1,23 +1,30 @@
 import { Box, styled } from '@mui/material';
+import { useEffect } from 'react';
 
 import BaseModal from '~/components/BaseModal';
-import { useCustomTheme } from '~/hooks';
+import { useModal } from '~/hooks';
 import { ModalType } from '~/types';
 
-export const ConfirmModal = () => {
+export const LoadingModal = () => {
+  const { modalOpen, setModalOpen } = useModal();
+
+  useEffect(() => {
+    setTimeout(() => {
+      modalOpen === ModalType.LOADING && setModalOpen(ModalType.SUCCESS);
+    }, 2000);
+  }, [modalOpen, setModalOpen]);
+
   return (
-    <BaseModal type={ModalType.CONFIRM}>
+    <BaseModal type={ModalType.LOADING}>
       <ModalBody>
-        <h1>Confirm modal</h1>
+        <h1>Loading...</h1>
       </ModalBody>
     </BaseModal>
   );
 };
 
 const ModalBody = styled(Box)(() => {
-  const { currentTheme } = useCustomTheme();
   return {
-    background: currentTheme.backgroundSecondary,
     height: '30rem',
     display: 'flex',
     flexDirection: 'column',
