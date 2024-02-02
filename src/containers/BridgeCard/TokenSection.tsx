@@ -32,10 +32,14 @@ export const TokenSection = () => {
       {!!fromTokens.length && (
         <TokenSelect label='Token' value={selectedToken?.symbol || ''} setValue={handleToken} list={fromTokens} />
       )}
-      <br />
 
+      <br />
       {selectedToken?.symbol === 'ETH' && <InputField label='ETH Amount' value={mint} setValue={setMint} />}
-      {selectedToken?.symbol !== 'ETH' && <InputField label='Token Amount' value={amount} setValue={setAmount} />}
+
+      {selectedToken && selectedToken?.symbol !== 'ETH' && (
+        <InputField label='Token Amount' value={amount} setValue={setAmount} />
+      )}
+
       <p>Balance: {formatUnits(BigInt(balance), selectedToken?.decimals || 18)}</p>
       <p>Allowance: {formatUnits(BigInt(allowance), selectedToken?.decimals || 18)}</p>
     </Box>
