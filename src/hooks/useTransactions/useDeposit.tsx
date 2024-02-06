@@ -1,41 +1,44 @@
-import { Hex } from 'viem';
+import { Address, Hex } from 'viem';
 
-import { useTransactionData, useToken, useCustomClient, useTokenList, useChain } from '~/hooks';
+import { useTransactionData, useToken, useCustomClient } from '~/hooks';
 import { depositERC20, depositETH, depositMessage } from '~/utils';
+import { useForceTx } from './useForceTx';
 
 export const useDeposit = () => {
-  const { mint, userAddress, data } = useTransactionData();
-  const { selectedToken, amount, allowance, approve, parseTokenUnits } = useToken();
+  const { mint, userAddress, data, isForceTransaction } = useTransactionData();
+  const { selectedToken, amount, allowance, toToken, approve, parseTokenUnits } = useToken();
   const { customClient } = useCustomClient();
-  const { toTokens } = useTokenList();
-  const { toChain } = useChain();
+  const forceTx = useForceTx();
 
   const deposit = async () => {
     if (!userAddress) return;
 
-    if (!selectedToken) {
-      await depositMessage({
-        customClient,
-        userAddress: userAddress,
-        data: data as Hex,
-      });
-    } else if (selectedToken?.symbol === 'ETH') {
-      await depositETH({
-        customClient,
-        mint: parseTokenUnits(mint),
-        to: userAddress,
-      });
+    if (isForceTransaction) {
+      await forceTx();
     } else {
-      await depositERC20({
-        customClient,
-        selectedToken,
-        amount: parseTokenUnits(amount),
-        userAddress,
-        allowance,
-        approve,
-        toChain,
-        toTokens,
-      });
+      if (!selectedToken) {
+        await depositMessage({
+          customClient,
+          userAddress: userAddress,
+          data: data as Hex,
+        });
+      } else if (selectedToken?.symbol === 'ETH') {
+        await depositETH({
+          customClient,
+          mint: parseTokenUnits(mint),
+          to: userAddress,
+        });
+      } else {
+        await depositERC20({
+          customClient,
+          l1TokenAddress: selectedToken.address as Address,
+          l2TokenAddress: toToken?.address as Address,
+          amount: parseTokenUnits(amount),
+          userAddress,
+          allowance,
+          approve,
+        });
+      }
     }
   };
 

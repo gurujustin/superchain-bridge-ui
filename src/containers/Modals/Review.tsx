@@ -6,11 +6,10 @@ import { useTransactionData, useToken, useTransactions } from '~/hooks';
 import { ModalType } from '~/types';
 
 export const ReviewModal = () => {
-  const { transactionType, data, mint } = useTransactionData();
-  const { selectedToken, amount } = useToken();
+  const { transactionType, data } = useTransactionData();
+  const { selectedToken } = useToken();
   const { executeTransaction } = useTransactions();
 
-  // temporary function, will be removed
   const handleConfirm = async () => {
     executeTransaction();
   };
@@ -24,13 +23,7 @@ export const ReviewModal = () => {
         {selectedToken && <p>Token: {selectedToken?.symbol}</p>}
         {!selectedToken && <p>Message: {data}</p>}
 
-        <Button
-          variant='contained'
-          color='primary'
-          fullWidth
-          onClick={handleConfirm}
-          disabled={selectedToken && (!amount || !mint)}
-        >
+        <Button variant='contained' color='primary' fullWidth onClick={handleConfirm}>
           Initiate Transaction
         </Button>
       </ModalBody>

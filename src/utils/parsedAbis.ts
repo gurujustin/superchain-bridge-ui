@@ -47,3 +47,51 @@ export const bridgeERC20ToABI = parseAbi([
 export const sendMessageABI = parseAbi([
   'function sendMessage(address _target, bytes calldata _message, uint32 _minGasLimit) external payable',
 ]);
+
+/**
+ * @notice Accepts deposits of ETH and data, and emits a TransactionDeposited event for use in
+ *         deriving deposit transactions. Note that if a deposit is made by a contract, its
+ *         address will be aliased when retrieved using `tx.origin` or `msg.sender`. Consider
+ *         using the CrossDomainMessenger contracts for a simpler developer experience.
+ * @param _to         Target address on L2.
+ * @param _value      ETH value to send to the recipient.
+ * @param _gasLimit   Amount of L2 gas to purchase by burning gas on L1.
+ * @param _isCreation Whether or not the transaction is a contract creation.
+ * @param _data       Data to trigger the recipient with.
+ */
+export const depositTransactionABI = parseAbi([
+  'function depositTransaction(address _to, uint256 _value, uint64 _gasLimit, bool _isCreation, bytes calldata _data) external',
+]);
+
+/**
+ * @custom:legacy
+ * @notice Initiates a withdrawal from L2 to L1 to a target account on L1.
+ *         Note that if ETH is sent to a contract on L1 and the call fails, then that ETH will
+ *         be locked in the L1StandardBridge. ETH may be recoverable if the call can be
+ *         successfully replayed by increasing the amount of gas supplied to the call. If the
+ *         call will fail for any amount of gas, then the ETH will be locked permanently.
+ *         This function only works with OptimismMintableERC20 tokens or ether. Use the
+ *         `bridgeERC20To` function to bridge native L2 tokens to L1.
+ * @param _l2Token     Address of the L2 token to withdraw.
+ * @param _to          Recipient account on L1.
+ * @param _amount      Amount of the L2 token to withdraw.
+ * @param _minGasLimit Minimum gas limit to use for the transaction.
+ * @param _extraData   Extra data attached to the withdrawal.
+ */
+export const withdrawToABI = parseAbi([
+  'function withdrawTo(address _l2Token, address _to, uint256 _amount, uint32 _minGasLimit, bytes calldata _extraData) external payable',
+]);
+
+/**
+ * @notice Finalizes an ETH bridge on this chain. Can only be triggered by the other
+ *         StandardBridge contract on the remote chain.
+ * @param _from      Address of the sender.
+ * @param _to        Address of the receiver.
+ * @param _amount    Amount of ETH being bridged.
+ * @param _extraData Extra data to be sent with the transaction. Note that the recipient will
+ *                   not be triggered with this data, but it will be emitted and can be used
+ *                   to identify the transaction.
+ */
+export const finalizeBridgeETHABI = parseAbi([
+  'function finalizeBridgeETH(address _from, address _to, uint256 _amount, bytes calldata _extraData) public payable',
+]);
