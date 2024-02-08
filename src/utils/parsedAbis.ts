@@ -1,31 +1,4 @@
-import { parseAbi, parseAbiItem } from 'viem';
-
-/**
- * @notice Emitted when a transaction is deposited from L1 to L2.
- *         The parameters of this event are read by the rollup node and used to derive deposit
- *         transactions on L2.
- * @param from       Address that triggered the deposit transaction.
- * @param to         Address that the deposit transaction is directed to.
- * @param version    Version of this deposit transaction event.
- * @param opaqueData ABI encoded deposit data to be parsed off-chain.
- */
-export const transactionDepositedABI = parseAbiItem(
-  'event TransactionDeposited(address indexed from,address indexed to,uint256 indexed version,bytes opaqueData)',
-);
-
-/**
- * @notice Emitted any time a withdrawal is initiated.
- * @param nonce          Unique value corresponding to each withdrawal.
- * @param sender         The L2 account address which initiated the withdrawal.
- * @param target         The L1 account address the call will be send to.
- * @param value          The ETH value submitted for withdrawal, to be forwarded to the target.
- * @param gasLimit       The minimum amount of gas that must be provided when withdrawing.
- * @param data           The data to be forwarded to the target on L1.
- * @param withdrawalHash The hash of the withdrawal.
- */
-export const messagePassedAbi = parseAbiItem(
-  'event MessagePassed(uint256 indexed nonce,address indexed sender,address indexed target,uint256 value,uint256 gasLimit,bytes data,bytes32 withdrawalHash)',
-);
+import { parseAbi } from 'viem';
 
 /**
  * @notice Finalizes an ERC20 bridge on this chain. Can only be triggered by the other
@@ -42,6 +15,26 @@ export const messagePassedAbi = parseAbiItem(
  */
 export const finalizeBridgeERC20ABI = parseAbi([
   'function finalizeBridgeERC20(address _localToken, address _remoteToken, address _from, address _to, uint256 _amount, bytes calldata _extraData) external',
+]);
+
+/**
+ * @notice Sends ETH to a receiver's address on the other chain. Note that if ETH is sent to a
+ *         smart contract and the call fails, the ETH will be temporarily locked in the
+ *         StandardBridge on the other chain until the call is replayed. If the call cannot be
+ *         replayed with any amount of gas (call always reverts), then the ETH will be
+ *         permanently locked in the StandardBridge on the other chain. ETH will also
+ *         be locked if the receiver is the other bridge, because finalizeBridgeETH will revert
+ *         in that case.
+ *
+ * @param _to          Address of the receiver.
+ * @param _minGasLimit Minimum amount of gas that the bridge can be relayed with.
+ * @param _extraData   Extra data to be sent with the transaction. Note that the recipient will
+ *                     not be triggered with this data, but it will be emitted and can be used
+ *                     to identify the transaction.
+ */
+
+export const bridgeETHToABI = parseAbi([
+  'function bridgeETHTo(address _to, uint32 _minGasLimit, bytes calldata _extraData) external payable',
 ]);
 
 /**

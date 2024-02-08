@@ -1,5 +1,18 @@
-import { Address, PublicClient, WalletClient } from 'viem';
-import { WalletActionsL1, WalletActionsL2, PublicActionsL1, PublicActionsL2 } from 'viem/op-stack';
+import { Address, GetLogsReturnType, PublicClient, TransactionReceipt, WalletClient } from 'viem';
+import {
+  WalletActionsL1,
+  WalletActionsL2,
+  PublicActionsL1,
+  PublicActionsL2,
+  GetWithdrawalStatusReturnType,
+} from 'viem/op-stack';
+import {
+  erc20BridgeInitiatedABI,
+  ethBridgeInitiatedABI,
+  messagePassedAbi,
+  sentMessageABI,
+  transactionDepositedABI,
+} from '~/utils';
 
 export interface OpContracts {
   standardBridge: Address;
@@ -49,3 +62,16 @@ export enum ForceTransactionType {
   ETH_TRANSFER = 'ethTransfer',
   ERC20_TRANSFER = 'erc20Transfer',
 }
+
+export type DepositLogs = {
+  logs: GetLogsReturnType<typeof transactionDepositedABI>;
+  receipts: TransactionReceipt[];
+};
+
+export type WithdrawLogs = {
+  logs: GetLogsReturnType<
+    typeof messagePassedAbi | typeof erc20BridgeInitiatedABI | typeof ethBridgeInitiatedABI | typeof sentMessageABI
+  >;
+  receipts: TransactionReceipt[];
+  status: GetWithdrawalStatusReturnType[];
+};
