@@ -10,7 +10,7 @@ import {
   erc20BridgeInitiatedABI,
   ethBridgeInitiatedABI,
   messagePassedAbi,
-  sentMessageABI,
+  sentMessageExtensionABI,
   transactionDepositedABI,
 } from '~/utils';
 
@@ -64,13 +64,21 @@ export enum ForceTransactionType {
 }
 
 export type DepositLogs = {
-  logs: GetLogsReturnType<typeof transactionDepositedABI>;
+  logs: GetLogsReturnType<
+    | typeof transactionDepositedABI
+    | typeof ethBridgeInitiatedABI
+    | typeof erc20BridgeInitiatedABI
+    | typeof sentMessageExtensionABI
+  >;
   receipts: TransactionReceipt[];
 };
 
 export type WithdrawLogs = {
   logs: GetLogsReturnType<
-    typeof messagePassedAbi | typeof erc20BridgeInitiatedABI | typeof ethBridgeInitiatedABI | typeof sentMessageABI
+    | typeof messagePassedAbi
+    | typeof erc20BridgeInitiatedABI
+    | typeof ethBridgeInitiatedABI
+    | typeof sentMessageExtensionABI
   >;
   receipts: TransactionReceipt[];
   status: GetWithdrawalStatusReturnType[];
