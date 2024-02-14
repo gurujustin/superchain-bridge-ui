@@ -1,8 +1,9 @@
-import { Hex, PublicClient, TransactionReceipt } from 'viem';
+import { Hex, PublicClient, TransactionReceipt, decodeEventLog, encodeFunctionData, keccak256, parseAbi } from 'viem';
 import { getL2TransactionHashes } from 'viem/op-stack';
 
 import { ExecuteL1DepositProps } from '~/types';
-import { depositTransactionABI } from '../parsedAbis';
+import { depositTransactionABI, relayMessageABI } from '../parsedAbis';
+import { sentMessageEvent, sentMessageExtensionEvent } from '../parsedEvents';
 
 /**
  * Receives a L1 transaction hash and waits for the L2 transaction receipt.
@@ -57,4 +58,82 @@ export const excecuteL1Deposit = async ({ customClient, userAddress, to, args }:
     l1Hash,
     l2Receipt,
   };
+};
+
+export const getMsgHashes = (messageReceipts: TransactionReceipt[], receiptType: 'erc20' | 'message' | 'eth') => {
+  const sentMessageLogIndex = getSenMessageLogIndex(receiptType);
+  const sentMessageExtensionLogIndex = getSentMessageExtensionLogIndex(receiptType);
+
+  const sentMessageDecoded = messageReceipts.map(({ logs }) =>
+    decodeEventLog({
+      abi: parseAbi([sentMessageEvent]),
+      data: logs[sentMessageLogIndex].data,
+      topics: logs[sentMessageLogIndex].topics,
+    }),
+  );
+
+  const sentMessageExtensionDecoded = messageReceipts.map(({ logs }) =>
+    decodeEventLog({
+      abi: parseAbi([sentMessageExtensionEvent]),
+      data: logs[sentMessageExtensionLogIndex].data,
+      topics: logs[sentMessageExtensionLogIndex].topics,
+    }),
+  );
+
+  const args = sentMessageDecoded.map(({ args }, index) => ({
+    messageNonce: args.messageNonce,
+    sender: args.sender,
+    target: args.target,
+    value: sentMessageExtensionDecoded[index].args.value,
+    gasLimit: args.gasLimit,
+    message: args.message,
+  }));
+
+  const msgHashes = sentMessageDecoded.map(({ args }, index) =>
+    keccak256(
+      encodeFunctionData({
+        abi: relayMessageABI,
+        args: [
+          args.messageNonce,
+          args.sender,
+          args.target,
+          sentMessageExtensionDecoded[index].args.value,
+          args.gasLimit,
+          args.message,
+        ],
+      }),
+    ),
+  );
+
+  return { msgHashes, args };
+};
+
+const getSenMessageLogIndex = (receiptType: 'erc20' | 'message' | 'eth') => {
+  // if receipts are from messages:
+  // - sentMessage log index = 1
+
+  // if receipts are from erc20 transactions:
+  // - sentMessage log index = 5
+
+  // if receipts are from eth transactions:
+  // - sentMessage log index = 3
+
+  if (receiptType === 'message') return 1;
+  if (receiptType === 'erc20') return 5;
+  return 3;
+};
+
+const getSentMessageExtensionLogIndex = (receiptType: 'erc20' | 'message' | 'eth') => {
+  // if receipts are from messages:
+  // - sentMessageExtension1 log index = 2
+
+  // if receipts are from erc20 transactions:
+  // - sentMessageExtension1 log index = 6
+
+  // if receipts are from eth transactions:
+  // - sentMessageExtension1 log index = 4
+
+  if (receiptType === 'message') return 2;
+  if (receiptType === 'erc20') return 6;
+  return 4;
 };

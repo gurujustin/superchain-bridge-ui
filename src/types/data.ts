@@ -1,4 +1,4 @@
-import { Address, GetLogsReturnType, PublicClient, TransactionReceipt, WalletClient } from 'viem';
+import { Address, GetLogsReturnType, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import {
   WalletActionsL1,
   WalletActionsL2,
@@ -9,6 +9,7 @@ import {
 import {
   erc20BridgeInitiatedABI,
   ethBridgeInitiatedABI,
+  failedRelayedMessageABI,
   messagePassedAbi,
   sentMessageExtensionABI,
   transactionDepositedABI,
@@ -71,6 +72,9 @@ export type DepositLogs = {
     | typeof sentMessageExtensionABI
   >;
   receipts: TransactionReceipt[];
+  msgHashes: Hex[];
+  args: RelayMessageArgs[];
+  failedTxs: GetLogsReturnType<typeof failedRelayedMessageABI>;
 };
 
 export type WithdrawLogs = {
@@ -82,4 +86,17 @@ export type WithdrawLogs = {
   >;
   receipts: TransactionReceipt[];
   status: GetWithdrawalStatusReturnType[];
+
+  msgHashes: Hex[];
+  args: RelayMessageArgs[];
+  failedTxs: GetLogsReturnType<typeof failedRelayedMessageABI>;
 };
+
+export interface RelayMessageArgs {
+  messageNonce: bigint;
+  sender: Address;
+  target: Address;
+  value: bigint;
+  gasLimit: bigint;
+  message: Address;
+}
