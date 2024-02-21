@@ -1,21 +1,24 @@
-import Typography from '@mui/material/Typography';
-import { Box, Button, IconButton, styled } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Button, styled } from '@mui/material';
 import { isHex } from 'viem';
-import Image from 'next/image';
-
-import adjustmentsIcon from '~/assets/icons/adjustments.svg';
 
 import { useCustomTheme, useModal, useToken, useTransactionData } from '~/hooks';
-import { ChainSection } from './sections/ChainSection';
-import { TokenSection } from './sections/TokenSection';
-import { TargetButtons } from './sections/TargetButtons';
-import { BridgeSection } from './sections/BridgeSection';
+
 import { ModalType } from '~/types';
+import { BasicMode } from './BasicMode';
+import { ExpertMode } from './ExpertMode';
+import { CardHeader } from './CardHeader';
 
 export const BridgeCard = () => {
   const { setModalOpen } = useModal();
   const { amount, selectedToken } = useToken();
-  const { mint, data, isForceTransaction, setIsForceTransaction } = useTransactionData();
+  const {
+    mint,
+    data,
+    customTransactionType: customTransaction,
+    setCustomTransactionType: setCustomTransaction,
+  } = useTransactionData();
+  const [isExpertMode, setIsExpertMode] = useState(false);
 
   const handleReview = () => {
     setModalOpen(ModalType.REVIEW);
@@ -26,29 +29,31 @@ export const BridgeCard = () => {
     (selectedToken && selectedToken?.symbol !== 'ETH' && !Number(amount)) ||
     (!!data && !isHex(data));
 
+  const disableMessage = useMemo(() => {
+    if (!isButtonDisabled) return 'Review transaction';
+    if (!isExpertMode) return 'Enter amount';
+    if (!customTransaction) return 'Select transaction type';
+
+    return 'Enter data';
+  }, [isButtonDisabled, isExpertMode, customTransaction]);
+
   return (
     <MainCardContainer>
-      <Header>
-        <Typography variant='h5'>Superchain Bridge</Typography>
+      <CardHeader
+        isExpertMode={isExpertMode}
+        setIsExpertMode={setIsExpertMode}
+        customTransaction={!!customTransaction}
+        setCustomTransaction={setCustomTransaction}
+      />
 
-        <IconButton onClick={() => setIsForceTransaction(!isForceTransaction)}>
-          <Image src={adjustmentsIcon} alt='Advance mode' />
-        </IconButton>
-      </Header>
+      {!isExpertMode && !customTransaction && <BasicMode />}
 
-      <ContentSection>
-        <ChainSection />
+      {isExpertMode && !customTransaction && <ExpertMode setCustomTransaction={setCustomTransaction} />}
 
-        <TokenSection />
-
-        <TargetButtons />
-
-        <BridgeSection />
-      </ContentSection>
+      {customTransaction && <>test</>}
 
       <StyledButton variant='contained' fullWidth onClick={handleReview} disabled={isButtonDisabled}>
-        {isButtonDisabled && 'Enter amount'}
-        {!isButtonDisabled && 'Review Transaction'}
+        {disableMessage}
       </StyledButton>
     </MainCardContainer>
   );
@@ -95,26 +100,5 @@ const StyledButton = styled(Button)(() => {
       borderColor: currentTheme.steel[700],
       color: currentTheme.steel[500],
     },
-  };
-});
-
-const ContentSection = styled('section')(() => {
-  return {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'start',
-    gap: '0.8rem',
-    width: '100%',
-  };
-});
-
-const Header = styled(Box)(() => {
-  return {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
   };
 });
