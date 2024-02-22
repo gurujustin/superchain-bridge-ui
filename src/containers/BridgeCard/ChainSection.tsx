@@ -4,13 +4,20 @@ import Image from 'next/image';
 
 import arrowRightIcon from '~/assets/icons/arrow-right.svg';
 
-import { useChain, useCustomTheme, useToken, useTokenList } from '~/hooks';
+import { useChain, useCustomTheme, useToken, useTokenList, useTransactionData } from '~/hooks';
 import { ChainSelect } from '~/components';
 
 export const ChainSection = () => {
-  const { fromList, toList, setFromChain, setToChain, fromChain, toChain, switchChains } = useChain();
+  const { customTransactionType } = useTransactionData();
+  const { fromList, toList, setFromChain, setToChain, fromChain, toChain, switchChains, l1Chains, l2Chains } =
+    useChain();
+
   const { setSelectedToken } = useToken();
   const { fromTokens } = useTokenList();
+
+  const transactionTypeForce = customTransactionType?.includes('force');
+  const fromChainList = transactionTypeForce ? l1Chains : fromList;
+  const toChainList = transactionTypeForce ? l2Chains : toList;
 
   const handleFrom = (chain: Chain) => {
     setFromChain(chain);
@@ -26,13 +33,13 @@ export const ChainSection = () => {
 
   return (
     <ChainSectionContainer>
-      <ChainSelect label='From' value={fromChain} setValue={handleFrom} list={fromList} />
+      <ChainSelect label='From' value={fromChain} setValue={handleFrom} list={fromChainList} />
 
-      <SwitchIcon onClick={switchChains}>
+      <SwitchIcon onClick={switchChains} disabled={transactionTypeForce}>
         <Image src={arrowRightIcon} alt='Switch' width={24} height={24} />
       </SwitchIcon>
 
-      <ChainSelect label='To' value={toChain} setValue={handleTo} list={toList} />
+      <ChainSelect label='To' value={toChain} setValue={handleTo} list={toChainList} />
     </ChainSectionContainer>
   );
 };
@@ -52,6 +59,13 @@ const SwitchIcon = styled(IconButton)(() => {
 
     '&:hover': {
       backgroundColor: currentTheme.steel[700],
+    },
+
+    '&:disabled': {
+      fontWeight: 500,
+      backgroundColor: currentTheme.steel[700],
+      borderColor: currentTheme.steel[700],
+      color: currentTheme.steel[500],
     },
   };
 });

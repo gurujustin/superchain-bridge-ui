@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { Address, erc20Abi, getContract, parseUnits } from 'viem';
+import { Address, erc20Abi, parseUnits } from 'viem';
 import { useAccount, useBalance } from 'wagmi';
 
 import { useChain, useCustomClient, useTokenList } from '~/hooks';
@@ -27,6 +27,8 @@ type ContextType = {
   approve: () => Promise<void>;
 
   parseTokenUnits: (val: string) => bigint;
+
+  resetValues: () => void;
 };
 
 interface StateProps {
@@ -65,18 +67,6 @@ export const TokenProvider = ({ children }: StateProps) => {
     return toTokens.find((token) => token.symbol === selectedToken?.symbol && token.chainId === toChain.id);
   }, [selectedToken, toChain.id, toTokens]);
 
-  const tokenContract = useMemo(() => {
-    if (!selectedToken || !from) return;
-    if (selectedToken?.symbol === 'ETH') {
-      return setEthBalance(data?.value.toString() || '');
-    }
-    return getContract({
-      address: selectedToken?.address as Address,
-      abi: erc20Abi,
-      client: from,
-    });
-  }, [selectedToken, from, data]);
-
   const parseTokenUnits = useCallback(
     (amount?: string) => {
       if (!amount || !selectedToken) return 0n;
@@ -107,32 +97,49 @@ export const TokenProvider = ({ children }: StateProps) => {
     }
   };
 
-  useEffect(() => {
-    if (!tokenContract || !address || !from.contracts.standardBridge) return;
-    // get balance
-    tokenContract.read
-      .balanceOf([address])
-      .then((balance: bigint) => {
-        setBalance(balance.toString());
-      })
-      .catch(() => {
-        setBalance('');
-      });
+  const resetValues = () => {
+    setAmount('');
+    setBalance('');
+    setAllowance('');
+  };
 
-    // get allowance
-    tokenContract.read
-      .allowance([address, from.contracts.standardBridge]) // owner and spender
-      .then((allowance: bigint) => {
-        setAllowance(allowance.toString());
+  useEffect(() => {
+    if (!address || !from.contracts.standardBridge) return;
+    const tokenAddress = selectedToken?.address as Address;
+
+    from.public
+      .multicall({
+        contracts: [
+          {
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [address],
+          },
+          {
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: 'allowance',
+            args: [address, from.contracts.standardBridge],
+          },
+        ],
       })
-      .catch(() => {
-        setAllowance('');
+      .then(([balance, allowance]) => {
+        setBalance(balance.result?.toString() || '');
+        setAllowance(allowance.result?.toString() || '');
       });
-  }, [address, from.contracts?.standardBridge, tokenContract]);
+  }, [address, from.contracts.standardBridge, from.public, selectedToken?.address]);
+
+  useEffect(() => {
+    if (selectedToken?.symbol === 'ETH') {
+      return setEthBalance(data?.value.toString() || '');
+    }
+  }, [data?.value, selectedToken?.symbol]);
 
   useEffect(
     function reset() {
       if (!selectedToken) return;
+
       setBalance('');
       setAllowance('');
       setAmount('');
@@ -156,6 +163,7 @@ export const TokenProvider = ({ children }: StateProps) => {
         toToken,
         price,
         setPrice,
+        resetValues,
       }}
     >
       {children}
