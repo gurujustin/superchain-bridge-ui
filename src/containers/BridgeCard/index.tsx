@@ -24,7 +24,7 @@ export const BridgeCard = () => {
 
   const isButtonDisabled = !isReady;
 
-  const disableMessage = useMemo(() => {
+  const buttonMessage = useMemo(() => {
     if (!isButtonDisabled) return 'Review transaction';
     if (!isExpertMode) return 'Enter amount';
     if (!customTransaction) return 'Select transaction type';
@@ -48,14 +48,16 @@ export const BridgeCard = () => {
 
       {customTransaction && <CustomTransaction />}
 
-      <StyledButton variant='contained' fullWidth onClick={handleReview} disabled={isButtonDisabled}>
-        {disableMessage}
-      </StyledButton>
+      {((isExpertMode && customTransaction) || !isExpertMode) && (
+        <StyledButton variant='contained' fullWidth onClick={handleReview} disabled={isButtonDisabled}>
+          {buttonMessage}
+        </StyledButton>
+      )}
     </MainCardContainer>
   );
 };
 
-const MainCardContainer = styled('main')(() => {
+export const MainCardContainer = styled('main')(() => {
   const { currentTheme } = useCustomTheme();
   return {
     backgroundColor: currentTheme.steel[900],

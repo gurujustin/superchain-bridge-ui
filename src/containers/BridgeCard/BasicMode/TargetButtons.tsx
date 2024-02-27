@@ -4,12 +4,12 @@ import Image from 'next/image';
 
 import { useCustomTheme, useModal, useToken, useTransactionData } from '~/hooks';
 import { formatDataNumber, getUsdBalance, truncateAddress } from '~/utils';
-import { SInputLabel } from '~/components';
+import { SInputLabel, STooltip } from '~/components';
 import { ModalType } from '~/types';
 
 export const TargetButtons = () => {
   const { selectedToken, amount, price } = useToken();
-  const { to, mint, value } = useTransactionData();
+  const { to, mint, value, userAddress } = useTransactionData();
   const { setModalOpen } = useModal();
 
   const openSelectAccountModal = () => {
@@ -26,6 +26,7 @@ export const TargetButtons = () => {
   );
 
   const usdValue = getUsdBalance(price, amountToShow, selectedToken?.decimals);
+  const tooltipTitle = userAddress === to ? 'This is your connected wallet' : 'This is not your connected wallet';
 
   return (
     <Stack direction='row' gap='0.8rem' width='100%'>
@@ -39,10 +40,12 @@ export const TargetButtons = () => {
         </StyledStack>
       </BasicButton>
 
-      <BasicButton fullWidth onClick={openSelectAccountModal}>
-        <SInputLabel>To address</SInputLabel>
-        {truncateAddress(to)}
-      </BasicButton>
+      <STooltip title={tooltipTitle}>
+        <BasicButton fullWidth onClick={openSelectAccountModal}>
+          <SInputLabel>To address</SInputLabel>
+          <>{truncateAddress(to)}</>
+        </BasicButton>
+      </STooltip>
     </Stack>
   );
 };
@@ -60,7 +63,7 @@ const BasicButton = styled(Button)(() => {
     borderColor: currentTheme.steel[700],
     backgroundColor: currentTheme.steel[800],
     borderRadius: '1.2rem',
-    padding: '1.2rem 1.4rem',
+    padding: '1.2rem 1.6rem',
     textTransform: 'none',
     color: currentTheme.steel[50],
 
@@ -74,7 +77,8 @@ const BasicButton = styled(Button)(() => {
     },
 
     '&:hover': {
-      backgroundColor: currentTheme.steel[700],
+      backgroundColor: currentTheme.steel[800],
+      borderColor: currentTheme.steel[600],
     },
 
     '&:disabled': {

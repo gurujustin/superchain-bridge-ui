@@ -15,9 +15,8 @@ export const ChainSection = () => {
   const { setSelectedToken } = useToken();
   const { fromTokens } = useTokenList();
 
-  const transactionTypeForce = customTransactionType?.includes('force');
-  const fromChainList = transactionTypeForce ? l1Chains : fromList;
-  const toChainList = transactionTypeForce ? l2Chains : toList;
+  const fromChainList = customTransactionType?.includes('force') ? l1Chains : fromList;
+  const toChainList = customTransactionType?.includes('force') ? l2Chains : toList;
 
   const handleFrom = (chain: Chain) => {
     setFromChain(chain);
@@ -35,7 +34,7 @@ export const ChainSection = () => {
     <ChainSectionContainer>
       <ChainSelect label='From' value={fromChain} setValue={handleFrom} list={fromChainList} />
 
-      <SwitchIcon onClick={switchChains} disabled={transactionTypeForce}>
+      <SwitchIcon onClick={switchChains} disabled={customTransactionType?.includes('force')}>
         <Image src={arrowRightIcon} alt='Switch' width={24} height={24} />
       </SwitchIcon>
 
@@ -58,7 +57,8 @@ const SwitchIcon = styled(IconButton)(() => {
     height: '5.6rem',
 
     '&:hover': {
-      backgroundColor: currentTheme.steel[700],
+      backgroundColor: currentTheme.steel[800],
+      borderColor: currentTheme.steel[600],
     },
 
     '&:disabled': {

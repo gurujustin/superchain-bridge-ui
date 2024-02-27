@@ -7,6 +7,7 @@ import chevrownDown from '~/assets/icons/chevron-down.svg';
 import { useCustomTheme } from '~/hooks';
 import { BasicButton } from './Buttons';
 import { SInputLabel } from './InputField';
+import { chainData } from '~/utils';
 
 interface ChainSelectProps {
   label: string;
@@ -45,6 +46,7 @@ export const ChainSelect = ({ label, list, value, setValue, disabled }: ChainSel
         fullWidth
         disabled={disabled || list.length < 2}
       >
+        <Image src={chainData[value.id].logo} alt={value.name} width={32} height={32} />
         {value.name}
       </MenuButton>
 
@@ -58,6 +60,8 @@ export const ChainSelect = ({ label, list, value, setValue, disabled }: ChainSel
       >
         {list.map((chain) => (
           <MenuItem key={chain.id} value={chain.name} onClick={() => selectChain(chain)}>
+            <Image src={chainData[chain.id].logo} alt={chain.name} width={24} height={24} />
+
             {chain.name}
           </MenuItem>
         ))}
@@ -116,6 +120,8 @@ const StyledMenu = styled((props: MenuProps) => (
 
       '& .MuiMenuItem-root': {
         padding: '1.2rem 1.6rem',
+        gap: '0.8rem',
+        fontSize: '1.6rem',
 
         '&:hover': {
           backgroundColor: currentTheme.steel[800],

@@ -10,6 +10,7 @@ export const Footer = () => {
       <RightSide>
         <Link href='/'>Legal</Link>
         <Link href='/'>Docs</Link>
+        <Link href='/'>Github</Link>
       </RightSide>
 
       <Box>
@@ -21,14 +22,15 @@ export const Footer = () => {
 
 const FooterContainer = styled('footer')`
   display: flex;
-  height: 6.4rem;
+  height: 8rem;
   align-items: center;
+  padding: 3.2rem 0 4.8rem 0;
   justify-content: space-between;
-
+  margin-top: auto;
   width: 100%;
 `;
 
-const RightSide = styled(Box)(({ theme }) => {
+const RightSide = styled(Box)(() => {
   const { currentTheme } = useCustomTheme();
   return {
     display: 'flex',
@@ -37,7 +39,7 @@ const RightSide = styled(Box)(({ theme }) => {
     justifyContent: 'center',
     a: {
       color: currentTheme.steel[500],
-      fontSize: theme.typography.body1.fontSize,
+      fontSize: '1.2rem',
       '&:hover': {
         transition: currentTheme.transition,
         color: currentTheme.steel[100],
