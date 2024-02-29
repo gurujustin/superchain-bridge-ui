@@ -1,34 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Box, styled } from '@mui/material';
-import { isAddress } from 'viem';
+import { Box, Typography, styled } from '@mui/material';
 import { useAccount } from 'wagmi';
+import Image from 'next/image';
 
+import copyIcon from '~/assets/icons/copy.svg';
 // import { finalizeWithdrawal, proveWithdrawal } from '~/utils';
-import { MainCardContainer } from '~/containers';
-import { useQueryParams } from '~/hooks';
-import { QueryParamKey } from '~/types';
+import { MainCardContainer, ActivityTable, BackButton } from '~/containers';
+import { truncateAddress } from '~/utils';
+import { CustomHead } from '~/components';
+import { useCustomTheme } from '~/hooks';
 
 const History = () => {
   const { address: currentAddress } = useAccount();
-  const [searchAddress, setSearchAddress] = useState(currentAddress || '');
-  const { updateQueryParams, getParam } = useQueryParams();
-  const [address, setAddress] = useState(currentAddress || '');
-  // const { withdrawLogs, depositLogs } = useLogs();
+  // const [searchAddress, setSearchAddress] = useState(currentAddress || '');
+  // const { updateQueryParams, getParam } = useQueryParams();
+  // const [address, setAddress] = useState(currentAddress || '');
+
   // const { customClient } = useCustomClient();
 
   // update local state and searchParams on input change
-  const onInputAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchAddress(e.target.value);
-    updateQueryParams(QueryParamKey.address, e.target.value);
-  };
+  // const onInputAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   setSearchAddress(e.target.value);
+  //   updateQueryParams(QueryParamKey.address, e.target.value);
+  // };
 
-  useEffect(() => {
-    const address = getParam(QueryParamKey.address);
-    if (isAddress(address)) {
-      // when the address is valid, trigger the search
-      setAddress(address); // temporary
-    }
-  }, [getParam, searchAddress]);
+  // useEffect(() => {
+  //   const address = getParam(QueryParamKey.address);
+  //   if (isAddress(address)) {
+  //     // when the address is valid, trigger the search
+  //     setAddress(address); // temporary
+  //   }
+  // }, [getParam, searchAddress]);
 
   // const initateTransaction = async (status: string, receipt: TransactionReceipt) => {
   //   if (status === 'ready-to-prove') {
@@ -40,12 +41,22 @@ const History = () => {
 
   return (
     <Container>
+      <CustomHead title='Account History' />
+
+      <BackButton href='/' />
+
       <SMainCardContainer>
-        <h1>History Page</h1>
-        <br />
-        <span>search Address</span> <input value={searchAddress} onChange={onInputAddressChange} />
-        <br />
-        <h3>Searching for address: {currentAddress ?? address}</h3>
+        <HeaderContainer>
+          <Typography variant='h1'>Account History</Typography>
+
+          <Box>
+            {currentAddress && <Typography variant='body1'>{truncateAddress(currentAddress || '0x')}</Typography>}
+            <Image src={copyIcon} alt='Copy to clipboard' />
+          </Box>
+        </HeaderContainer>
+
+        <ActivityTable />
+
         {/* {depositLogs?.failedTxs.map((failedLog) => (
           <React.Fragment key={failedLog.transactionHash}>
             <Paper square={false} sx={{ mt: 2, p: 2 }}>
@@ -88,6 +99,7 @@ export const SMainCardContainer = styled(MainCardContainer)(() => {
     width: '84.3rem',
     maxHeight: '68rem',
     boxShadow: 'none',
+    padding: '2rem 3.2rem',
   };
 });
 
@@ -98,5 +110,38 @@ const Container = styled(Box)(() => {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    width: '100%',
+  };
+});
+
+const HeaderContainer = styled(Box)(() => {
+  const { currentTheme } = useCustomTheme();
+
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'start',
+    alignItems: 'start',
+    gap: '1.2rem',
+    h1: {
+      color: currentTheme.steel[50],
+      fontSize: '3rem',
+      fontWeight: 500,
+      lineHeight: 1.2,
+    },
+    div: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: '0.8rem',
+      cursor: 'pointer',
+    },
+    p: {
+      color: currentTheme.steel[300],
+      fontSize: '1.6rem',
+      fontWeight: 400,
+      lineHeight: '1.8rem',
+    },
   };
 });

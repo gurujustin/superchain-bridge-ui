@@ -1,5 +1,6 @@
 import { Badge, Box, IconButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useAccount } from 'wagmi';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -12,6 +13,7 @@ import historyIcon from '~/assets/icons/clock-rewind.svg';
 import settingsIcon from '~/assets/icons/settings.svg';
 
 export const Header = () => {
+  const { address } = useAccount();
   const { fromChain } = useChain();
   const { setModalOpen } = useModal();
   const chainPath = replaceSpacesWithHyphens(fromChain?.name || '');
@@ -31,18 +33,18 @@ export const Header = () => {
 
       {/* Right section */}
       <RightSection>
-        <IconButton>
-          <Badge badgeContent={4} variant='dot' color='primary' overlap='circular'>
-            <Link
-              href={{
-                pathname: '/[chain]/history',
-                query: { chain: chainPath },
-              }}
-            >
+        <Link
+          href={{
+            pathname: '/[chain]/history',
+            query: { chain: chainPath, account: address },
+          }}
+        >
+          <IconButton>
+            <Badge badgeContent={4} variant='dot' color='primary' overlap='circular'>
               <SHistoryIcon src={historyIcon} alt='Transaction History' />
-            </Link>
-          </Badge>
-        </IconButton>
+            </Badge>
+          </IconButton>
+        </Link>
 
         <IconButton onClick={openSettings}>
           <StyledSettingsIcon src={settingsIcon} alt='Settings' />
@@ -63,6 +65,7 @@ const HeaderContainer = styled('header')(() => {
   return {
     display: 'flex',
     height: '8rem',
+    minHeight: '8rem',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
