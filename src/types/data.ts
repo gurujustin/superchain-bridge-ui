@@ -1,19 +1,6 @@
 import { Address, GetLogsReturnType, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
-import {
-  WalletActionsL1,
-  WalletActionsL2,
-  PublicActionsL1,
-  PublicActionsL2,
-  GetWithdrawalStatusReturnType,
-} from 'viem/op-stack';
-import {
-  erc20BridgeInitiatedABI,
-  ethBridgeInitiatedABI,
-  failedRelayedMessageABI,
-  messagePassedAbi,
-  sentMessageExtensionABI,
-  transactionDepositedABI,
-} from '~/utils';
+import { WalletActionsL1, WalletActionsL2, PublicActionsL1, PublicActionsL2 } from 'viem/op-stack';
+import { failedRelayedMessageABI } from '~/utils';
 
 export interface OpContracts {
   standardBridge: Address;
@@ -59,28 +46,36 @@ export enum TransactionType {
 
 export type CustomTransactionType = 'custom-tx' | 'force-withdrawal' | 'force-transfer';
 
+export interface AccountLogs {
+  blockNumber: bigint;
+  date: string | number;
+  transactionHash: string;
+  type: string;
+  originChain: string;
+  destinationChain: string;
+  bridge: string;
+  fees: string;
+  transactionTime: string;
+  status: string;
+  from: Address;
+  receipt: TransactionReceipt;
+  to: Address;
+  localToken?: Address;
+  remoteToken?: Address;
+  amount?: bigint;
+  data?: Hex;
+}
+
 export type DepositLogs = {
-  logs: GetLogsReturnType<
-    | typeof transactionDepositedABI
-    | typeof ethBridgeInitiatedABI
-    | typeof erc20BridgeInitiatedABI
-    | typeof sentMessageExtensionABI
-  >;
-  receipts: TransactionReceipt[];
+  accountLogs: AccountLogs[];
+
   msgHashes: Hex[];
   args: RelayMessageArgs[];
   failedTxs: GetLogsReturnType<typeof failedRelayedMessageABI>;
 };
 
 export type WithdrawLogs = {
-  logs: GetLogsReturnType<
-    | typeof messagePassedAbi
-    | typeof erc20BridgeInitiatedABI
-    | typeof ethBridgeInitiatedABI
-    | typeof sentMessageExtensionABI
-  >;
-  receipts: TransactionReceipt[];
-  status: GetWithdrawalStatusReturnType[];
+  accountLogs: AccountLogs[];
 
   msgHashes: Hex[];
   args: RelayMessageArgs[];

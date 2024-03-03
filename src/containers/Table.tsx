@@ -6,35 +6,53 @@ import Link from 'next/link';
 import detailsIcon from '~/assets/icons/details-arrow.svg';
 import openLinkIcon from '~/assets/icons/open-link.svg';
 
-import { formatTimestamp, replaceSpacesWithHyphens, truncateAddress } from '~/utils';
-import { useChain, useCustomTheme, useLogs } from '~/hooks';
-import { SPagination } from '~/components';
+import { formatDataNumber, formatTimestamp, replaceSpacesWithHyphens, truncateAddress } from '~/utils';
+import { useChain, useCustomTheme, useLogs, useTokenList } from '~/hooks';
+import { SPagination, StatusChip } from '~/components';
+import { AccountLogs } from '~/types';
 
-const createData = (type: string, amount: number, txHash: string, timestamp: string, status: string) => {
-  return { type, amount, txHash, dateTime: formatTimestamp(timestamp), status };
+const createData = (
+  type: string,
+  amount: string,
+  txHash: string,
+  timestamp: string,
+  status: string,
+  log: AccountLogs,
+) => {
+  return { type, amount, txHash, dateTime: formatTimestamp(timestamp), status, log };
 };
 
 export const ActivityTable = () => {
   const itemsPerPage = 6;
   const { fromChain } = useChain();
+  const { fromTokens, toTokens } = useTokenList();
   const chainPath = replaceSpacesWithHyphens(fromChain?.name || '');
-  const { depositLogs, withdrawLogs } = useLogs();
+  const { depositLogs, withdrawLogs, setSelectedLog } = useLogs();
 
   const [paging, setPaging] = useState({ from: 0, to: itemsPerPage });
-  const receipts = [...(depositLogs?.receipts || []), ...(withdrawLogs?.receipts || [])];
+  const receipts = [...(depositLogs?.accountLogs || []), ...(withdrawLogs?.accountLogs || [])];
 
   // order receipts by blocknumber
-  const orderedReceipts = receipts.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+  const orderedLogs = receipts.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
 
-  const rows = orderedReceipts.map((receipt) => {
+  const rows = orderedLogs.map((eventLog) => {
+    const token =
+      fromTokens.find((token) => token.address === eventLog.localToken) ||
+      toTokens.find((token) => token.address === eventLog.localToken);
+
     return createData(
-      'test', // receipt.status,
-      100, //Number(receipt.blockNumber),
-      receipt.transactionHash,
-      receipt.blockNumber.toString(), // timestamp
-      receipt.status,
+      eventLog.type,
+      eventLog?.amount ? `${formatDataNumber(Number(eventLog.amount), token?.decimals, 2)} ${token?.symbol}` : '-', // amount
+      eventLog.transactionHash,
+      eventLog.blockNumber.toString(), // timestamp
+      eventLog.status,
+      eventLog,
     );
   });
+
+  const handleOpenTransaction = (log: AccountLogs) => {
+    setSelectedLog(log);
+  };
 
   return (
     <TableContainer>
@@ -71,13 +89,16 @@ export const ActivityTable = () => {
               <DateTimeCell>{row.dateTime}</DateTimeCell>
 
               {/* Status */}
-              <StatusCell>{row.status}</StatusCell>
+              <StatusCell>
+                <StatusChip status={row.status} />
+              </StatusCell>
 
               {/* Go to transaction detials */}
               <TableCell className='details-link'>
                 <Link
+                  onClick={() => handleOpenTransaction(row.log)}
                   href={{
-                    pathname: '/[chain]/[tx]',
+                    pathname: '/[chain]/tx/[tx]',
                     query: { chain: chainPath, tx: row.txHash },
                   }}
                 >
@@ -114,8 +135,13 @@ const STableBody = styled(TableBody)(() => {
     color: currentTheme.steel[100],
     fontWeight: 500,
     td: {
-      padding: '2.2rem 2.4rem',
+      padding: '2.2rem 1.8rem',
+      minWidth: '13rem',
       borderBottom: `1px solid ${currentTheme.steel[700]}`,
+    },
+    'td:last-child': {
+      minWidth: '6rem',
+      width: '6rem',
     },
   };
 });
@@ -123,10 +149,6 @@ const STableBody = styled(TableBody)(() => {
 const STableRow = styled(TableRow)(() => {
   const { currentTheme } = useCustomTheme();
   return {
-    '& .type': {
-      width: '15rem',
-      minWidth: '15rem',
-    },
     '& .details-link': {
       padding: 0,
     },

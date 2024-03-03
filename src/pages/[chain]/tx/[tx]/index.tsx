@@ -1,28 +1,61 @@
+import { useCallback, useEffect } from 'react';
 import { Box, Typography, styled } from '@mui/material';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
+import { useAccount } from 'wagmi';
 
 import copyIcon from '~/assets/icons/copy.svg';
 
 import { BackButton, DataRow, MainCardContainer } from '~/containers';
-import { useCustomTheme, useQueryParams } from '~/hooks';
-import { CustomHead } from '~/components';
+import { useCustomClient, useCustomTheme, useLogs, useQueryParams } from '~/hooks';
+import { CustomHead, PrimaryButton, STooltip, StatusChip } from '~/components';
+import { finalizeWithdrawal, getTxDetailsButtonText, proveWithdrawal, truncateAddress } from '~/utils';
 import { QueryParamKey } from '~/types';
 
 const Transaction = () => {
+  const { customClient } = useCustomClient();
+  const { address } = useAccount();
+  const { selectedLog } = useLogs();
   const { getParam } = useQueryParams();
   const hash = getParam(QueryParamKey.tx);
   const chain = getParam(QueryParamKey.chain);
+  const router = useRouter();
+
+  const isActionRequired = selectedLog?.status === 'ready-to-prove' || selectedLog?.status === 'ready-to-finalize';
+
+  const initateTransaction = useCallback(async () => {
+    if (!selectedLog || !address) return;
+    try {
+      if (selectedLog.status === 'ready-to-prove') {
+        await proveWithdrawal({ customClient, receipt: selectedLog.receipt, userAddress: address });
+      } else if (selectedLog.status === 'ready-to-finalize') {
+        await finalizeWithdrawal({ customClient, receipt: selectedLog.receipt, userAddress: address });
+      }
+    } catch (error) {
+      console.error('Error', error);
+    }
+  }, [address, customClient, selectedLog]);
+
+  // temporary redirect
+  useEffect(() => {
+    if (selectedLog?.transactionHash !== hash) {
+      router.push('/');
+    }
+  }, [hash, router, selectedLog?.transactionHash]);
 
   return (
     <>
       <CustomHead title='Transaction Details' />
 
       <Container>
-        <BackButton href={`/${chain}/history`} />
+        <BackButton href={address ? `/${chain}/account/${address}` : '/'} />
 
         <SMainCardContainer>
           <HeaderContainer>
-            <Typography variant='h1'>Deposit</Typography>
+            <Box>
+              <Typography variant='h1'>{selectedLog?.type}</Typography>
+              <StatusChip status={selectedLog?.status || ''} title />
+            </Box>
 
             <Box>
               {hash && <Typography variant='body1'>{hash}</Typography>}
@@ -35,51 +68,55 @@ const Transaction = () => {
               <DataContainer>
                 <DataRow>
                   <Typography variant='body1'>Date</Typography>
-                  <span>2024-02-14 21:06</span>
+                  <span>{selectedLog?.date}</span>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>Transaction type</Typography>
-                  <span>Deposit</span>
+                  <span>{selectedLog?.type}</span>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>Origin chain</Typography>
-                  <span>Sepolia</span>
+                  <span>{selectedLog?.originChain}</span>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>Destination chain</Typography>
-                  <span>OP Sepolia</span>
+                  <span>{selectedLog?.destinationChain}</span>
                 </DataRow>
               </DataContainer>
 
               <DataContainer>
                 <DataRow>
                   <Typography variant='body1'>Bridge</Typography>
-                  <span>Optimism Gateway</span>
+                  <span>{selectedLog?.bridge}</span>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>Fees</Typography>
-                  <span>$21.33</span>
+                  <span>{selectedLog?.fees}</span>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>Transaction time</Typography>
-                  <span>2m</span>
+                  <span>{selectedLog?.transactionTime}</span>
                 </DataRow>
               </DataContainer>
 
               <DataContainer>
                 <DataRow>
                   <Typography variant='body1'>From</Typography>
-                  <span>0x1111...cdef</span>
+                  <STooltip title={selectedLog?.from} className='address'>
+                    <span>{truncateAddress(selectedLog?.from || '0x')}</span>
+                  </STooltip>
                 </DataRow>
 
                 <DataRow>
                   <Typography variant='body1'>To</Typography>
-                  <span>0x1111...cdef</span>
+                  <STooltip title={selectedLog?.from} className='address'>
+                    <span>{truncateAddress(selectedLog?.to || '0x')}</span>
+                  </STooltip>
                 </DataRow>
 
                 <DataRow>
@@ -96,25 +133,11 @@ const Transaction = () => {
 
             <RightSection>
               <DataContainer>
-                <DataRow>
-                  <Typography variant='body1'>From</Typography>
-                  <span>0x1111...cdef</span>
-                </DataRow>
-
-                <DataRow>
-                  <Typography variant='body1'>To</Typography>
-                  <span>0x1111...cdef</span>
-                </DataRow>
-
-                <DataRow>
-                  <Typography variant='body1'>Sent</Typography>
-                  <span>2030 USDC</span>
-                </DataRow>
-
-                <DataRow>
-                  <Typography variant='body1'>Received</Typography>
-                  <span>2030 USDC.e</span>
-                </DataRow>
+                {isActionRequired && (
+                  <PrimaryButton onClick={initateTransaction} disabled={!address}>
+                    {getTxDetailsButtonText(selectedLog?.status || '')}
+                  </PrimaryButton>
+                )}
               </DataContainer>
             </RightSection>
           </Content>
@@ -170,6 +193,12 @@ const HeaderContainer = styled(Box)(() => {
       gap: '0.8rem',
       cursor: 'pointer',
     },
+
+    'div:first-of-type': {
+      cursor: 'default',
+      gap: '1.2rem',
+    },
+
     p: {
       color: currentTheme.steel[400],
       fontSize: '1.6rem',
