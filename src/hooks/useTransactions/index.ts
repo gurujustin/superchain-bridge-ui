@@ -1,12 +1,12 @@
 import { useChainId, useSwitchChain } from 'wagmi';
 
 import { useChain, useModal, useTransactionData } from '~/hooks';
-import { ModalType, TransactionType } from '~/types';
+import { ModalType, TransactionStep, TransactionType } from '~/types';
 import { useWithdraw } from './useWithdraw';
 import { useDeposit } from './useDeposit';
 
 export const useTransactions = () => {
-  const { transactionType } = useTransactionData();
+  const { transactionType, setTxStep } = useTransactionData();
   const { switchChainAsync } = useSwitchChain();
   const { fromChain } = useChain();
   const chainId = useChainId();
@@ -14,10 +14,11 @@ export const useTransactions = () => {
   const { setModalOpen } = useModal();
 
   const deposit = useDeposit();
-  const withdraw = useWithdraw();
+  const { withdraw, prove, finalize } = useWithdraw();
 
   const executeTransaction = async () => {
     setModalOpen(ModalType.LOADING);
+    setTxStep(TransactionStep.INITIATE);
 
     try {
       if (chainId !== fromChain.id) {
@@ -33,12 +34,34 @@ export const useTransactions = () => {
           await withdraw();
           break;
 
+        case TransactionType.PROVE:
+          await prove();
+          break;
+
+        case TransactionType.FINALIZE:
+          await finalize();
+          break;
+
+        case TransactionType.SWAP:
+          // TODO: Implement swap <- use Lifi
+          break;
+
+        case TransactionType.REPLAY:
+          // TODO: Implement replay
+          break;
+
         case TransactionType.BRIDGE:
-          // TODO: Implement bridge
+          // TODO: Implement bridge <- use Lifi
           break;
       }
 
-      setModalOpen(ModalType.SUCCESS);
+      setTxStep(TransactionStep.FINALIZED);
+
+      setTimeout(() => {
+        setModalOpen(ModalType.SUCCESS);
+        setTxStep(TransactionStep.NONE);
+        // TODO: reset values and refetch data
+      }, 3000);
     } catch (e) {
       console.warn(e);
       setModalOpen(ModalType.REVIEW);

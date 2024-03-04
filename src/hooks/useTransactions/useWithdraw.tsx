@@ -1,10 +1,17 @@
 import { Address, Hex } from 'viem';
 
-import { useTransactionData, useToken, useCustomClient } from '~/hooks';
-import { initiateERC20Withdraw, initiateETHWithdraw, initiateMessageWithdraw } from '~/utils';
+import { useTransactionData, useToken, useCustomClient, useLogs } from '~/hooks';
+import {
+  finalizeWithdrawal,
+  initiateERC20Withdraw,
+  initiateETHWithdraw,
+  initiateMessageWithdraw,
+  proveWithdrawal,
+} from '~/utils';
 
 export const useWithdraw = () => {
-  const { mint, userAddress, data } = useTransactionData();
+  const { selectedLog } = useLogs();
+  const { mint, userAddress, data, setTxStep } = useTransactionData();
   const { selectedToken, amount, toToken, parseTokenUnits } = useToken();
   const { customClient } = useCustomClient();
 
@@ -16,6 +23,7 @@ export const useWithdraw = () => {
       console.log('calling initiateMessageWithdraw');
 
       await initiateMessageWithdraw({
+        setTxStep,
         customClient,
         userAddress: userAddress,
         message: data as Hex,
@@ -24,6 +32,7 @@ export const useWithdraw = () => {
       console.log('calling initiateETHWithdraw');
 
       await initiateETHWithdraw({
+        setTxStep,
         customClient,
         userAddress,
         mint: parseTokenUnits(mint),
@@ -33,6 +42,7 @@ export const useWithdraw = () => {
       console.log('calling initiateERC20Withdraw');
 
       await initiateERC20Withdraw({
+        setTxStep,
         customClient,
         amount: parseTokenUnits(amount),
         userAddress,
@@ -42,5 +52,29 @@ export const useWithdraw = () => {
     }
   };
 
-  return withdraw;
+  const prove = async () => {
+    if (!selectedLog || !userAddress) return;
+
+    try {
+      // temporary log
+      console.log('calling proveWithdrawal');
+      await proveWithdrawal({ customClient, receipt: selectedLog.receipt, userAddress, setTxStep });
+    } catch (error) {
+      console.error('Error', error);
+    }
+  };
+
+  const finalize = async () => {
+    if (!selectedLog || !userAddress) return;
+
+    try {
+      // temporary log
+      console.log('calling finalizeWithdrawal');
+      await finalizeWithdrawal({ customClient, receipt: selectedLog.receipt, userAddress, setTxStep });
+    } catch (error) {
+      console.error('Error', error);
+    }
+  };
+
+  return { withdraw, prove, finalize };
 };

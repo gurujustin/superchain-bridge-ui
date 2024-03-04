@@ -2,8 +2,8 @@ import { createContext, useEffect, useMemo, useState } from 'react';
 import { Address } from 'viem';
 import { useAccount } from 'wagmi';
 
-import { useChain, useToken } from '~/hooks';
-import { CustomTransactionType, TransactionType } from '~/types';
+import { useModal, useToken } from '~/hooks';
+import { CustomTransactionType, ModalType, TransactionStep, TransactionType } from '~/types';
 
 type ContextType = {
   userAddress?: Address;
@@ -28,6 +28,10 @@ type ContextType = {
   resetValues: () => void;
 
   transactionType: TransactionType;
+  setTransactionType: (val: TransactionType) => void;
+
+  txStep: TransactionStep;
+  setTxStep: (val: TransactionStep) => void;
 };
 
 interface StateProps {
@@ -37,6 +41,7 @@ interface StateProps {
 export const TransactionDataContext = createContext({} as ContextType);
 
 export const TransactionDataProvider = ({ children }: StateProps) => {
+  const { modalOpen } = useModal();
   const { address } = useAccount();
   const [mint, setMint] = useState<string>('');
   const [value, setValue] = useState<string>('');
@@ -44,28 +49,9 @@ export const TransactionDataProvider = ({ children }: StateProps) => {
   const [to, setTo] = useState<string>(address?.toString() || '');
 
   const { amount } = useToken();
-  const { fromChain, toChain } = useChain();
   const [customTransactionType, setCustomTransactionType] = useState<CustomTransactionType>();
-
-  // If the selected chain has a sourceId, its because it's a L2 chain
-  const isFromAnL2 = !!fromChain?.sourceId;
-  const isToAnL2 = !!toChain?.sourceId;
-
-  const transactionType = useMemo(() => {
-    // If both chains are L2, it's a bridge transaction
-    if (isFromAnL2 && isToAnL2) {
-      return TransactionType.BRIDGE;
-      // If the source chain is L2 and the destination chain is L1, it's a withdraw transaction
-    } else if (isFromAnL2 && !isToAnL2) {
-      return TransactionType.WITHDRAW;
-      // If the source chain is L1 and the destination chain is L2, it's a deposit transaction
-    } else if (!isFromAnL2 && isToAnL2) {
-      return TransactionType.DEPOSIT;
-      // If both chains are L1, it's a swap transaction
-    } else {
-      return TransactionType.SWAP;
-    }
-  }, [isFromAnL2, isToAnL2]);
+  const [transactionType, setTransactionType] = useState<TransactionType>(TransactionType.NONE);
+  const [txStep, setTxStep] = useState<TransactionStep>(TransactionStep.NONE);
 
   const isReady = useMemo(() => {
     return !!(mint || value || amount || data);
@@ -80,10 +66,15 @@ export const TransactionDataProvider = ({ children }: StateProps) => {
 
   useEffect(() => {
     if (address) {
-      // temporary
       setTo(address);
     }
   }, [address]);
+
+  useEffect(() => {
+    if (modalOpen === ModalType.NONE) {
+      setCustomTransactionType(undefined);
+    }
+  }, [modalOpen]);
 
   return (
     <TransactionDataContext.Provider
@@ -97,11 +88,14 @@ export const TransactionDataProvider = ({ children }: StateProps) => {
         to,
         setTo,
         transactionType,
+        setTransactionType,
         userAddress: address,
         customTransactionType,
         setCustomTransactionType,
         isReady,
         resetValues,
+        txStep,
+        setTxStep,
       }}
     >
       {children}

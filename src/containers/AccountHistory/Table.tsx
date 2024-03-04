@@ -6,49 +6,20 @@ import Link from 'next/link';
 import detailsIcon from '~/assets/icons/details-arrow.svg';
 import openLinkIcon from '~/assets/icons/open-link.svg';
 
-import { formatDataNumber, formatTimestamp, replaceSpacesWithHyphens, truncateAddress } from '~/utils';
-import { useChain, useCustomTheme, useLogs, useTokenList } from '~/hooks';
+import { createData, replaceSpacesWithHyphens, truncateAddress } from '~/utils';
+import { useChain, useCustomTheme, useLogs } from '~/hooks';
 import { SPagination, StatusChip } from '~/components';
 import { AccountLogs } from '~/types';
 
-const createData = (
-  type: string,
-  amount: string,
-  txHash: string,
-  timestamp: string,
-  status: string,
-  log: AccountLogs,
-) => {
-  return { type, amount, txHash, dateTime: formatTimestamp(timestamp), status, log };
-};
-
-export const ActivityTable = () => {
+interface ActivityTableProps {
+  rows: ReturnType<typeof createData>[];
+}
+export const ActivityTable = ({ rows = [] }: ActivityTableProps) => {
   const itemsPerPage = 6;
   const { fromChain } = useChain();
-  const { fromTokens, toTokens } = useTokenList();
+  const { setSelectedLog } = useLogs();
   const chainPath = replaceSpacesWithHyphens(fromChain?.name || '');
-  const { depositLogs, withdrawLogs, setSelectedLog } = useLogs();
-
   const [paging, setPaging] = useState({ from: 0, to: itemsPerPage });
-  const receipts = [...(depositLogs?.accountLogs || []), ...(withdrawLogs?.accountLogs || [])];
-
-  // order receipts by blocknumber
-  const orderedLogs = receipts.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
-
-  const rows = orderedLogs.map((eventLog) => {
-    const token =
-      fromTokens.find((token) => token.address === eventLog.localToken) ||
-      toTokens.find((token) => token.address === eventLog.localToken);
-
-    return createData(
-      eventLog.type,
-      eventLog?.amount ? `${formatDataNumber(Number(eventLog.amount), token?.decimals, 2)} ${token?.symbol}` : '-', // amount
-      eventLog.transactionHash,
-      eventLog.blockNumber.toString(), // timestamp
-      eventLog.status,
-      eventLog,
-    );
-  });
 
   const handleOpenTransaction = (log: AccountLogs) => {
     setSelectedLog(log);
@@ -159,7 +130,9 @@ const STableRow = styled(TableRow)(() => {
       alignItems: 'center',
       justifyContent: 'center',
     },
+
     '& .details-link a:hover': {
+      transition: currentTheme.transition,
       backgroundColor: currentTheme.steel[800],
     },
   };

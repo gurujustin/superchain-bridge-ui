@@ -38,18 +38,23 @@ export interface TokenData {
 }
 
 export enum TransactionType {
-  DEPOSIT = 'deposit',
-  WITHDRAW = 'withdraw',
-  BRIDGE = 'bridge',
-  SWAP = 'swap',
+  NONE = '',
+  DEPOSIT = 'Deposit',
+  WITHDRAW = 'Withdraw',
+  PROVE = 'Prove withdrawal',
+  FINALIZE = 'Finalize withdrawal',
+  REPLAY = 'Replay transaction',
+  BRIDGE = 'Bridge',
+  SWAP = 'Swap',
 }
 
 export type CustomTransactionType = 'custom-tx' | 'force-withdrawal' | 'force-transfer';
 
 export interface AccountLogs {
   blockNumber: bigint;
-  date: string | number;
+  timestamp: bigint | number;
   transactionHash: string;
+  l2TransactionHash?: string;
   type: string;
   originChain: string;
   destinationChain: string;
@@ -89,4 +94,12 @@ export interface RelayMessageArgs {
   value: bigint;
   gasLimit: bigint;
   message: Address;
+}
+
+export enum TransactionStep {
+  NONE = 'None',
+  INITIATE = 'Initiate Transaction',
+  PROCESSING = 'Processing Transaction',
+  REPLAYING = 'Replaying Transaction',
+  FINALIZED = 'Finalized Transaction',
 }
