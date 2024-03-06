@@ -1,6 +1,7 @@
 import { useChainId, useSwitchChain } from 'wagmi';
+import { useRouter } from 'next/router';
 
-import { useChain, useModal, useTransactionData } from '~/hooks';
+import { useChain, useLogs, useModal, useTransactionData } from '~/hooks';
 import { ModalType, TransactionStep, TransactionType } from '~/types';
 import { useWithdraw } from './useWithdraw';
 import { useDeposit } from './useDeposit';
@@ -9,7 +10,9 @@ export const useTransactions = () => {
   const { transactionType, setTxStep } = useTransactionData();
   const { switchChainAsync } = useSwitchChain();
   const { fromChain } = useChain();
+  const { refetchLogs } = useLogs();
   const chainId = useChainId();
+  const router = useRouter();
 
   const { setModalOpen } = useModal();
 
@@ -56,8 +59,12 @@ export const useTransactions = () => {
       }
 
       setTxStep(TransactionStep.FINALIZED);
+      refetchLogs();
 
       setTimeout(() => {
+        // redirect to history page if a tx hash is present in the URL
+        if (router.query.tx) router.push(`/${router.query.chain}/account/${router.query.tx}`);
+
         setModalOpen(ModalType.SUCCESS);
         setTxStep(TransactionStep.NONE);
         // TODO: reset values and refetch data

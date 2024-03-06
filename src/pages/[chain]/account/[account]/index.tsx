@@ -8,20 +8,20 @@ import arrowLeft from '~/assets/icons/arrow-left.svg';
 import copyIcon from '~/assets/icons/copy.svg';
 
 import { MainCardContainer, ActivityTable } from '~/containers';
-import { createData, formatDataNumber, getTimestamps, truncateAddress } from '~/utils';
-import { CustomHead } from '~/components';
+import { createData, formatDataNumber, getTimestamps } from '~/utils';
 import { useCustomClient, useCustomTheme, useLogs, useTokenList } from '~/hooks';
+import { CustomHead, TableSkeleton } from '~/components';
 
 const History = () => {
   const router = useRouter();
   const { address: currentAddress } = useAccount();
   const { customClient } = useCustomClient();
   const { fromTokens, toTokens } = useTokenList();
-  const { depositLogs, withdrawLogs, orderedLogs, setOrderedLogs } = useLogs();
+  const { depositLogs, withdrawLogs, orderedLogs, isSuccess, setOrderedLogs, isLoading, setIsLoading } = useLogs();
 
   const getOrderedLogs = useCallback(async () => {
     if (!depositLogs || !withdrawLogs) return;
-    const accountLogs = [...(depositLogs?.accountLogs || []), ...(withdrawLogs?.accountLogs || [])];
+    const accountLogs = [...depositLogs.accountLogs, ...withdrawLogs.accountLogs];
     const blocks = await getTimestamps(accountLogs, customClient);
 
     const logsWithTimestamp = accountLogs.map((log, index) => {
@@ -31,7 +31,8 @@ const History = () => {
 
     const reversedLogs = orderedLogs.reverse(); // latest logs first
     setOrderedLogs(reversedLogs);
-  }, [customClient, depositLogs, setOrderedLogs, withdrawLogs]);
+    setIsLoading(false);
+  }, [customClient, depositLogs, setIsLoading, setOrderedLogs, withdrawLogs]);
 
   const rows = useMemo(() => {
     const data = orderedLogs.map((eventLog) => {
@@ -59,10 +60,10 @@ const History = () => {
   };
 
   useEffect(() => {
-    if (orderedLogs.length === 0) {
+    if (orderedLogs.length === 0 && isSuccess) {
       getOrderedLogs();
     }
-  }, [getOrderedLogs, orderedLogs.length]);
+  }, [getOrderedLogs, orderedLogs.length, isSuccess]);
 
   return (
     <Container>
@@ -78,12 +79,13 @@ const History = () => {
           </Box>
 
           <Box>
-            {currentAddress && <Typography variant='body1'>{truncateAddress(currentAddress || '0x')}</Typography>}
+            {currentAddress && <Typography variant='body1'>{currentAddress}</Typography>}
             <Image src={copyIcon} alt='Copy to clipboard' />
           </Box>
         </HeaderContainer>
 
-        <ActivityTable rows={rows} />
+        {!isLoading && <ActivityTable rows={rows} />}
+        {isLoading && <TableSkeleton />}
       </SMainCardContainer>
     </Container>
   );
