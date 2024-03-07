@@ -1,10 +1,11 @@
 import { Badge, Box, IconButton } from '@mui/material';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { styled } from '@mui/material/styles';
 import { useAccount } from 'wagmi';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { Connect } from '~/components';
+import { Connect, STooltip } from '~/components';
 import { useChain, useCustomTheme, useLogs, useModal } from '~/hooks';
 import { replaceSpacesWithHyphens } from '~/utils';
 import { ModalType } from '~/types';
@@ -17,11 +18,23 @@ export const Header = () => {
   const { transactionPending } = useLogs();
   const { toChain } = useChain();
   const { setModalOpen } = useModal();
+  const { openConnectModal } = useConnectModal();
   const chainPath = replaceSpacesWithHyphens(toChain?.name || '');
 
   const openSettings = () => {
     setModalOpen(ModalType.SETTINGS);
   };
+
+  const handleAccountHistory = () => {
+    if (!address) openConnectModal?.();
+  };
+
+  const settingsHref = address
+    ? {
+        pathname: '/[chain]/account/[account]',
+        query: { chain: chainPath, account: address },
+      }
+    : '#';
 
   return (
     <HeaderContainer>
@@ -34,30 +47,23 @@ export const Header = () => {
 
       {/* Right section */}
       <RightSection>
-        {address && (
-          <Link
-            href={{
-              pathname: '/[chain]/account/[account]',
-              query: { chain: chainPath, account: address },
-            }}
-          >
-            <IconButton>
+        <STooltip title='Account History' placement='bottom'>
+          <IconButton onClick={handleAccountHistory}>
+            <Link href={settingsHref}>
               <Badge invisible={!transactionPending} variant='dot' color='primary' overlap='circular'>
-                <SHistoryIcon src={historyIcon} alt='Transaction History' />
+                <SHistoryIcon src={historyIcon} alt='Account History' />
               </Badge>
-            </IconButton>
-          </Link>
-        )}
+            </Link>
+          </IconButton>
+        </STooltip>
 
-        <IconButton onClick={openSettings}>
-          <StyledSettingsIcon src={settingsIcon} alt='Settings' />
-        </IconButton>
+        <STooltip title='Settings' placement='bottom'>
+          <IconButton onClick={openSettings}>
+            <StyledSettingsIcon src={settingsIcon} alt='Settings' />
+          </IconButton>
+        </STooltip>
 
         <Connect />
-
-        {/* <LangButton /> */}
-
-        {/* <ThemeButton /> */}
       </RightSection>
     </HeaderContainer>
   );
@@ -89,9 +95,9 @@ const RightSection = styled(Box)(() => {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '0.4rem',
+    gap: '0.8rem',
 
-    button: {
+    '.MuiIconButton-root': {
       padding: '1rem',
     },
 
@@ -102,6 +108,10 @@ const RightSection = styled(Box)(() => {
 
     '.MuiBadge-badge.MuiBadge-dot': {
       backgroundColor: currentTheme.errorPrimary,
+    },
+
+    'button:last-of-type': {
+      marginLeft: '1.2rem',
     },
   };
 });

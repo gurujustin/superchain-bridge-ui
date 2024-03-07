@@ -25,7 +25,7 @@ export const TargetButtons = () => {
     true,
   );
 
-  const usdValue = getUsdBalance(price, amountToShow, selectedToken?.decimals);
+  const usdValue = getUsdBalance(price, amountToShow, selectedToken?.decimals, true);
   const tooltipTitle = userAddress === to ? 'This is your connected wallet' : 'This is not your connected wallet';
 
   return (
@@ -43,7 +43,7 @@ export const TargetButtons = () => {
       <STooltip title={tooltipTitle}>
         <BasicButton fullWidth onClick={openSelectAccountModal} disabled={!userAddress}>
           <SInputLabel>To address</SInputLabel>
-          <>{truncateAddress(to)}</>
+          <>{to ? truncateAddress(to) : '-'}</>
         </BasicButton>
       </STooltip>
     </Stack>

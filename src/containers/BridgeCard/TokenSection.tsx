@@ -9,7 +9,7 @@ import { ModalType } from '~/types';
 
 export const TokenSection = () => {
   const { setModalOpen } = useModal();
-  const { mint, setMint, customTransactionType, value, setValue } = useTransactionData();
+  const { mint, setMint, customTransactionType, value, setValue, userAddress } = useTransactionData();
   const { selectedToken, amount, balance: tokenBalance, ethBalance, price, setAmount } = useToken();
 
   const balance = selectedToken?.symbol === 'ETH' ? ethBalance : tokenBalance;
@@ -32,6 +32,9 @@ export const TokenSection = () => {
       ? setEthValue(formatUnits(BigInt(ethBalance), 18))
       : setAmount(formatUnits(BigInt(balance), selectedToken?.decimals || 18));
   };
+
+  const filterSymbols = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault();
 
   const usdValue = getUsdBalance(price, inputValue, selectedToken?.decimals);
   const formattedBalance = formatDataNumber(balance, selectedToken?.decimals, 2, false, true);
@@ -58,6 +61,7 @@ export const TokenSection = () => {
           value={inputValue}
           onChange={handleOnChange}
           fullWidth
+          onKeyDown={filterSymbols}
           InputLabelProps={{
             shrink: true,
           }}
@@ -69,12 +73,14 @@ export const TokenSection = () => {
       <BalanceSection>
         <span>{usdValue}</span>
 
-        <span>
-          Balance: {formattedBalance}
-          <MaxButton variant='text' onClick={handleMax}>
-            Max
-          </MaxButton>
-        </span>
+        {userAddress && (
+          <span>
+            Balance: {formattedBalance}
+            <MaxButton variant='text' onClick={handleMax}>
+              Max
+            </MaxButton>
+          </span>
+        )}
       </BalanceSection>
     </TokensContainer>
   );
@@ -130,6 +136,10 @@ const StyledInput = styled(TextField)(() => {
       fontSize: '3.2rem',
       lineHeight: 1.2,
       padding: '0',
+
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
     },
 
     '& .MuiInputBase-input::placeholder': {
@@ -155,6 +165,11 @@ const BalanceSection = styled(InputSection)(() => {
     fontSize: '1.4rem',
     color: currentTheme.steel[400],
     fontWeight: 400,
+
+    span: {
+      display: 'flex',
+      alignItems: 'center',
+    },
   };
 });
 
