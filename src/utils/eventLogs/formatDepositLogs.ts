@@ -1,4 +1,6 @@
 import { GetLogsReturnType, Hex, TransactionReceipt } from 'viem';
+import { opaqueDataToDepositData } from 'viem/op-stack';
+
 import { AccountLogs, CustomClients } from '~/types';
 import {
   erc20BridgeInitiatedABI,
@@ -6,6 +8,7 @@ import {
   sentMessageExtensionABI,
   transactionDepositedABI,
 } from '~/utils/parsedEvents';
+import { getMsgHashes } from '../transactions';
 
 export const formatDepositETHLogs = (
   customClient: CustomClients,
@@ -22,16 +25,15 @@ export const formatDepositETHLogs = (
     l2TransactionHash: receiptsMap[log.transactionHash].l2Hash,
     originChain: customClient.from.public.chain!.id,
     destinationChain: customClient.to.public.chain!.id,
-    bridge: 'OP Gateway',
+    bridge: 'OP Standard Bridge',
     fees: '0',
-    transactionTime: '1m',
+    transactionTime: '2m',
     status: 'finalized',
     from: log.args.from!,
     to: log.args.to!,
     localToken: '0x0000000000000000000000000000000000000000',
     remoteToken: '0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000',
     amount: log.args.amount!,
-    data: log.args.extraData,
     receipt: receiptsMap[log.transactionHash].receipt,
   }));
 
@@ -53,16 +55,15 @@ export const formatERC20DepositLogs = (
     l2TransactionHash: receiptsMap[log.transactionHash].l2Hash,
     originChain: customClient.from.public.chain!.id,
     destinationChain: customClient.to.public.chain!.id,
-    bridge: 'OP Gateway',
+    bridge: 'OP Standard Bridge',
     fees: '0',
-    transactionTime: '1m',
+    transactionTime: '2m',
     status: 'finalized',
     from: log.args.from!,
     to: log.args.to!,
     amount: log.args.amount!,
     localToken: log.args.localToken!,
     remoteToken: log.args.remoteToken!,
-    data: log.args.extraData,
     receipt: receiptsMap[log.transactionHash].receipt,
   }));
 
@@ -75,8 +76,9 @@ export const formatMessageDepositLogs = (
   receiptsMap: { [hash: string]: { receipt: TransactionReceipt; l2Hash: Hex } },
 ): { accountLogs: AccountLogs[]; receipts: TransactionReceipt[] } => {
   const receipts = logs.map(({ transactionHash }) => receiptsMap[transactionHash].receipt);
+  const { args } = getMsgHashes(receipts, 'message');
 
-  const accountLogs: AccountLogs[] = logs.map((log) => ({
+  const accountLogs: AccountLogs[] = logs.map((log, index) => ({
     type: 'Deposit', // Deposit Message
     blockNumber: log.blockNumber,
     timestamp: 0,
@@ -84,14 +86,13 @@ export const formatMessageDepositLogs = (
     l2TransactionHash: receiptsMap[log.transactionHash].l2Hash,
     originChain: customClient.from.public.chain!.id,
     destinationChain: customClient.to.public.chain!.id,
-    bridge: 'OP Gateway',
+    bridge: 'OP Standard Bridge',
     fees: '0',
-    transactionTime: '1m',
+    transactionTime: '2m',
     status: 'finalized',
     from: log.args.sender!,
-    to: '0x',
-    // amount: log.args.value!,
-    data: '0x',
+    to: args[index].target,
+    data: args[index].message,
     receipt: receiptsMap[log.transactionHash].receipt,
   }));
 
@@ -105,24 +106,28 @@ export const formatForceDepositLogs = (
 ): { accountLogs: AccountLogs[]; receipts: TransactionReceipt[] } => {
   const receipts = logs.map(({ transactionHash }) => receiptsMap[transactionHash].receipt);
 
-  const accountLogs: AccountLogs[] = logs.map((log) => ({
-    type: 'Force Tx', // Force transaction
-    blockNumber: log.blockNumber,
-    timestamp: 0,
-    transactionHash: log.transactionHash,
-    l2TransactionHash: receiptsMap[log.transactionHash].l2Hash,
-    originChain: customClient.from.public.chain!.id,
-    destinationChain: customClient.to.public.chain!.id,
-    bridge: 'OP Gateway',
-    fees: '0',
-    transactionTime: '1m',
-    status: 'finalized',
-    from: log.args.from!,
-    to: log.args.to!,
-    amount: 0n,
-    data: log.args.opaqueData,
-    receipt: receiptsMap[log.transactionHash].receipt,
-  }));
+  const accountLogs: AccountLogs[] = logs.map((log) => {
+    const data = opaqueDataToDepositData(log.args.opaqueData!);
+
+    return {
+      type: 'Force Tx', // Force transaction
+      blockNumber: log.blockNumber,
+      timestamp: 0,
+      transactionHash: log.transactionHash,
+      l2TransactionHash: receiptsMap[log.transactionHash].l2Hash,
+      originChain: customClient.from.public.chain!.id,
+      destinationChain: customClient.to.public.chain!.id,
+      bridge: 'OP Standard Bridge',
+      fees: '0',
+      transactionTime: '1m',
+      status: 'finalized',
+      from: log.args.from!,
+      to: log.args.to!,
+      amount: 0n,
+      data: data.data,
+      receipt: receiptsMap[log.transactionHash].receipt,
+    };
+  });
 
   return { accountLogs, receipts };
 };

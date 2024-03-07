@@ -58,7 +58,7 @@ export const TxDetails = () => {
         <DataRow>
           <Typography variant='body1'>Bridge</Typography>
           <span>
-            <Image src={chainData[selectedLog?.originChain || 0]?.logo} alt='' width={20} height={20} />
+            <Image src={chainData[selectedLog?.destinationChain || 0]?.logo} alt='' width={20} height={20} />
             {selectedLog?.bridge}
           </span>
         </DataRow>
@@ -89,21 +89,34 @@ export const TxDetails = () => {
           </STooltip>
         </DataRow>
 
-        <DataRow>
-          <Typography variant='body1'>Sent</Typography>
-          <span>
-            <Image src={selectedToken?.logoURI || ''} alt={selectedToken?.symbol || ''} width={20} height={20} />
-            {formattedAmount}
-          </span>
-        </DataRow>
+        {selectedLog?.data && (
+          <>
+            <DataRow>
+              <Typography variant='body1'>Custom data</Typography>
+              <span>{selectedLog.data.length > 10 ? truncateAddress(selectedLog.data) : selectedLog.data}</span>
+            </DataRow>
+          </>
+        )}
 
-        <DataRow>
-          <Typography variant='body1'>Received</Typography>
-          <span>
-            <Image src={selectedToken?.logoURI || ''} alt={selectedToken?.symbol || ''} width={20} height={20} />
-            {formattedAmount}
-          </span>
-        </DataRow>
+        {!selectedLog?.data && (
+          <>
+            <DataRow>
+              <Typography variant='body1'>Sent</Typography>
+              <span>
+                <Image src={selectedToken?.logoURI || ''} alt={selectedToken?.symbol || ''} width={20} height={20} />
+                {formattedAmount}
+              </span>
+            </DataRow>
+
+            <DataRow>
+              <Typography variant='body1'>Received</Typography>
+              <span>
+                <Image src={selectedToken?.logoURI || ''} alt={selectedToken?.symbol || ''} width={20} height={20} />
+                {formattedAmount}
+              </span>
+            </DataRow>
+          </>
+        )}
       </DataContainer>
     </LeftSection>
   );

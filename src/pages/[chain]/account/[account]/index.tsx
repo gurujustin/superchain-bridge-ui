@@ -3,21 +3,31 @@ import { Box, IconButton, Typography, styled } from '@mui/material';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useAccount } from 'wagmi';
+import { Chain } from 'viem';
 
 import arrowLeft from '~/assets/icons/arrow-left.svg';
 import copyIcon from '~/assets/icons/copy.svg';
+import copyCheckIcon from '~/assets/icons/copy-check.svg';
 
 import { MainCardContainer, ActivityTable } from '~/containers';
 import { createData, formatDataNumber, getTimestamps } from '~/utils';
-import { useCustomClient, useCustomTheme, useLogs, useTokenList } from '~/hooks';
-import { CustomHead, TableSkeleton } from '~/components';
+import { useChain, useCopyToClipboard, useCustomClient, useCustomTheme, useLogs, useTokenList } from '~/hooks';
+import { ChainSelect, CustomHead, STooltip, TableSkeleton } from '~/components';
 
 const History = () => {
   const router = useRouter();
+  const { refetchLogs } = useLogs();
+  const { setToChain, toChain, l2Chains } = useChain();
   const { address: currentAddress } = useAccount();
+  const [copiedText, copy] = useCopyToClipboard();
   const { customClient } = useCustomClient();
   const { fromTokens, toTokens } = useTokenList();
   const { depositLogs, withdrawLogs, orderedLogs, isSuccess, setOrderedLogs, isLoading, setIsLoading } = useLogs();
+
+  const handleTo = (chain: Chain) => {
+    setToChain(chain);
+    setTimeout(refetchLogs);
+  };
 
   const getOrderedLogs = useCallback(async () => {
     if (!depositLogs || !withdrawLogs) return;
@@ -72,16 +82,22 @@ const History = () => {
       <SMainCardContainer>
         <HeaderContainer>
           <Box>
-            <IconButton onClick={handleBack}>
-              <Image src={arrowLeft} alt='back' />
-            </IconButton>
-            <Typography variant='h1'>Account History</Typography>
+            <Box>
+              <IconButton onClick={handleBack}>
+                <Image src={arrowLeft} alt='back' />
+              </IconButton>
+              <Typography variant='h1'>Account History</Typography>
+            </Box>
+
+            <ChainSelect value={toChain} setValue={handleTo} list={l2Chains} />
           </Box>
 
-          <Box>
-            {currentAddress && <Typography variant='body1'>{currentAddress}</Typography>}
-            <Image src={copyIcon} alt='Copy to clipboard' />
-          </Box>
+          <STooltip title={copiedText === currentAddress ? 'Copied!' : 'Copy to clipboard'} arrow>
+            <Box className='account' onClick={() => copy(currentAddress?.toString() || '')}>
+              {currentAddress && <Typography variant='body1'>{currentAddress}</Typography>}
+              <Image src={copiedText === currentAddress ? copyCheckIcon : copyIcon} alt='Copy to clipboard' />
+            </Box>
+          </STooltip>
         </HeaderContainer>
 
         {!isLoading && <ActivityTable rows={rows} />}
@@ -124,6 +140,11 @@ const HeaderContainer = styled(Box)(() => {
     justifyContent: 'start',
     alignItems: 'start',
     gap: '1.2rem',
+    width: '100%',
+    img: {
+      width: '2rem',
+      height: '2rem',
+    },
     h1: {
       color: currentTheme.steel[50],
       fontSize: '3rem',
@@ -131,6 +152,7 @@ const HeaderContainer = styled(Box)(() => {
       lineHeight: 1.2,
     },
     div: {
+      width: '100%',
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
@@ -142,6 +164,14 @@ const HeaderContainer = styled(Box)(() => {
       fontSize: '1.6rem',
       fontWeight: 400,
       lineHeight: '1.8rem',
+    },
+
+    '.account': {
+      width: 'auto',
+    },
+
+    '& .chain-select': {
+      maxWidth: '20rem',
     },
   };
 });
