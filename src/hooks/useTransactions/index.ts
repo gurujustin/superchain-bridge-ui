@@ -1,17 +1,19 @@
-import { useChainId, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useRouter } from 'next/router';
+import { BaseError } from 'viem';
 
-import { useChain, useLogs, useModal, useTransactionData } from '~/hooks';
+import { useChain, useLogs, useModal, useToken, useTransactionData } from '~/hooks';
 import { ModalType, TransactionStep, TransactionType } from '~/types';
 import { useWithdraw } from './useWithdraw';
 import { useDeposit } from './useDeposit';
 
 export const useTransactions = () => {
-  const { transactionType, setTxStep } = useTransactionData();
+  const { transactionType, setErrorMessage, resetValues: resetTransactionData, setTxMetadata } = useTransactionData();
+  const { resetValues: resetTokenValues } = useToken();
   const { switchChainAsync } = useSwitchChain();
   const { fromChain } = useChain();
   const { refetchLogs } = useLogs();
-  const chainId = useChainId();
+  const { chainId } = useAccount();
   const router = useRouter();
 
   const { setModalOpen } = useModal();
@@ -21,7 +23,7 @@ export const useTransactions = () => {
 
   const executeTransaction = async () => {
     setModalOpen(ModalType.LOADING);
-    setTxStep(TransactionStep.INITIATE);
+    setTxMetadata((prev) => ({ ...prev, step: TransactionStep.INITIATE }));
 
     try {
       if (chainId !== fromChain.id) {
@@ -58,7 +60,9 @@ export const useTransactions = () => {
           break;
       }
 
-      setTxStep(TransactionStep.FINALIZED);
+      setTxMetadata((prev) => ({ ...prev, step: TransactionStep.FINALIZED }));
+      resetTokenValues();
+      resetTransactionData();
       refetchLogs();
 
       setTimeout(() => {
@@ -66,12 +70,14 @@ export const useTransactions = () => {
         if (router.query.tx) router.push(`/${router.query.chain}/account/${router.query.tx}`);
 
         setModalOpen(ModalType.SUCCESS);
-        setTxStep(TransactionStep.NONE);
-        // TODO: reset values and refetch data
+        setTxMetadata({ step: TransactionStep.NONE });
       }, 3000);
     } catch (e) {
-      console.warn(e);
-      setModalOpen(ModalType.REVIEW);
+      const error = e as BaseError;
+
+      setTxMetadata({ step: TransactionStep.NONE });
+      setErrorMessage(error.shortMessage);
+      setModalOpen(ModalType.ERROR);
     }
   };
 
