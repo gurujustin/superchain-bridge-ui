@@ -16,6 +16,7 @@ export const getMuiThemeConfig = (currentTheme: Theme, themeName: ThemeName) => 
             background: currentTheme.backgroundPrimary,
             color: currentTheme.textPrimary,
 
+            textWrap: 'balance',
             overflowY: 'scroll', // Always show scrollbar to prevent shifting content
             '&::-webkit-scrollbar': {
               width: '0.6rem',
@@ -44,6 +45,9 @@ export const getMuiThemeConfig = (currentTheme: Theme, themeName: ThemeName) => 
             '.MuiButton-endIcon': {
               marginRight: '0',
             },
+          },
+          img: {
+            pointerEvents: 'none',
           },
         },
       },
